@@ -3,8 +3,6 @@ supabase
 PyPDF2
 requests
 python-dotenv
-google-generativeai
-crewai
-crewai-tools
 chromadb
-litellm
+sentence-transformers
+openai
