@@ -1,51 +1,52 @@
 """
-candidate_ingestion.py  –  Member 1 | Day 3
-────────────────────────────────────────────
-Inserts candidates into Supabase using ONLY the columns
-that currently exist in Member 4's candidates table:
-
-    id, name, email, phone, job_id, job_applied
+candidate_ingestion.py  -  Member 1 | Day 3
+Uses all columns now available in Member 4's candidates table:
+id, name, email, phone, job_id, job_applied,
+resume_text, source_quality_score, screening_score, status
 """
 
-import sys
 import os
+from supabase import create_client
+from dotenv import load_dotenv
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
-from shared.db import get_supabase
-
-supabase = get_supabase()
+supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
 
 def add_candidate(name: str, email: str, phone: str,
-                  job_applied: str, job_id: int = None) -> dict:
-    """
-    Insert one candidate into the candidates table.
-    Only uses columns that exist in Member 4's current table.
-    """
+                  job_applied: str, job_id: int = None,
+                  resume_text: str = "", status: str = "applied",
+                  source_quality_score: int = 0) -> dict:
+    """Insert one candidate into Supabase candidates table."""
 
     record = {
-        "name":        name,
-        "email":       email,
-        "phone":       phone,
-        "job_applied": job_applied,
+        "name":                 name,
+        "email":                email,
+        "phone":                phone,
+        "job_applied":          job_applied,
+        "resume_text":          resume_text[:5000],
+        "status":               status,
+        "source_quality_score": source_quality_score,
     }
-
-    # job_id is optional — only add if provided
     if job_id is not None:
         record["job_id"] = job_id
 
     result = supabase.table("candidates").insert(record).execute()
-    print(f"✅ Candidate added → {name} | {email} | {job_applied}")
+    print(f"✅ Inserted: {name} | {email} | status={status} | score={source_quality_score}")
     return result.data[0] if result.data else {}
 
 
 # ── Quick test ────────────────────────────────────────────────
 if __name__ == "__main__":
-    test = add_candidate(
-        name        = "Test Candidate",
-        email       = "test@example.com",
-        phone       = "9999999999",
-        job_applied = "Python Developer",
+    add_candidate(
+        name                 = "Test Candidate",
+        email                = "test2@example.com",
+        phone                = "9999999999",
+        job_applied          = "AI Engineer",
+        job_id               = 4,
+        resume_text          = "Python developer, 2 years experience, SQL, Django.",
+        status               = "applied",
+        source_quality_score = 0,
     )
-    print("Inserted row:", test)
+    print("Check Supabase → candidates table.")
