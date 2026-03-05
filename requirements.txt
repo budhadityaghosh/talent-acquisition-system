@@ -11,7 +11,7 @@ supabase
 PyPDF2
 requests
 python-dotenv
-google-generativeai
+google-genai
 crewai
 crewai-tools
 chromadb
