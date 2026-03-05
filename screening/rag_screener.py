@@ -1,7 +1,7 @@
 import sys
 import os
 import json
-from google import genai
+import google.generativeai as genai  # ← correct SDK (matches project plan & Member 1)
 from dotenv import load_dotenv
 
 # allow importing shared modules
@@ -13,7 +13,8 @@ from shared.chroma_setup import get_job_context, get_candidates_collection
 load_dotenv()
 
 # configure Gemini
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # Supabase connection
 supabase = get_supabase()
@@ -31,7 +32,7 @@ COMPANY REQUIREMENTS (from ChromaDB — RAG):
 CANDIDATE RESUME:
 {resume_text}
 
-Return ONLY valid JSON — no markdown:
+Return ONLY valid JSON — no markdown, no explanation:
 
 {{
 "screening_score": <0-100>,
@@ -44,14 +45,9 @@ Return ONLY valid JSON — no markdown:
 }}
 """
 
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt
-    )
+    raw = model.generate_content(prompt).text.strip()
 
-    raw = response.text.strip()
-
-    # clean Gemini formatting
+    # clean Gemini markdown formatting if present
     if "```" in raw:
         raw = raw.split("```")[1]
 
@@ -83,7 +79,9 @@ def run_screening(job_id):
     job_context = get_job_context(job_id)
 
     if not job_context:
-        print(f"Job {job_id} not found in ChromaDB.")
+        print(f"❌ Job {job_id} not found in ChromaDB.")
+        print("   → Make sure Member 4 has posted this job via hr_portal.py first.")
+        print("   → The chroma_db/ folder must exist in the project root.")
         return "Failed"
 
     result = (
@@ -95,6 +93,10 @@ def run_screening(job_id):
     )
 
     candidates = result.data
+
+    if not candidates:
+        print(f"No candidates with status 'applied' or 'sourced_qualified' for job {job_id}.")
+        return "No candidates"
 
     print(f"\nScreening {len(candidates)} candidates for job {job_id}")
     print("=" * 55)
@@ -118,6 +120,8 @@ def run_screening(job_id):
             }
 
             new_status = status_map.get(score["recommendation"], "maybe")
+
+            # Optional: send Telegram shortlist notification
             if new_status == "shortlisted":
                 try:
                     from engagement.telegram_notifier import send_shortlist_notification
@@ -131,7 +135,7 @@ def run_screening(job_id):
                 except Exception as e:
                     print("Telegram shortlist notification failed:", e)
 
-            # update database
+            # update Supabase
             supabase.table("candidates").update({
 
                 "screening_score": score["screening_score"],
@@ -143,7 +147,7 @@ def run_screening(job_id):
 
             }).eq("id", c["id"]).execute()
 
-            # store in ChromaDB
+            # store screened candidate in ChromaDB
             coll = get_candidates_collection()
 
             coll.upsert(
@@ -162,7 +166,7 @@ def run_screening(job_id):
 
         except Exception as e:
 
-            print(f"Error: {e}")
+            print(f"✗ Error screening {c['name']}: {e}")
 
             supabase.table("candidates").update(
                 {"status": "maybe"}
