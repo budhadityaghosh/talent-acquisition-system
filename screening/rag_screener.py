@@ -118,6 +118,18 @@ def run_screening(job_id):
             }
 
             new_status = status_map.get(score["recommendation"], "maybe")
+            if new_status == "shortlisted":
+                try:
+                    from engagement.telegram_notifier import send_shortlist_notification
+
+                    send_shortlist_notification(
+                        candidate_name=c["name"],
+                        chat_id=c.get("telegram_chat_id"),
+                        job_title=c.get("job_applied", "")
+                    )
+
+                except Exception as e:
+                    print("Telegram shortlist notification failed:", e)
 
             # update database
             supabase.table("candidates").update({
