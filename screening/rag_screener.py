@@ -1,7 +1,7 @@
 import sys
 import os
 import json
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 # allow importing shared modules
@@ -13,8 +13,7 @@ from shared.chroma_setup import get_job_context, get_candidates_collection
 load_dotenv()
 
 # configure Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-1.5-flash")
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Supabase connection
 supabase = get_supabase()
@@ -45,9 +44,14 @@ Return ONLY valid JSON — no markdown:
 }}
 """
 
-    raw = model.generate_content(prompt).text.strip()
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt
+    )
 
-# clean Gemini formatting
+    raw = response.text.strip()
+
+    # clean Gemini formatting
     if "```" in raw:
         raw = raw.split("```")[1]
 
@@ -72,6 +76,7 @@ Return ONLY valid JSON — no markdown:
             "recommendation": "maybe",
             "summary": "Fallback result due to parsing error."
         }
+
 
 def run_screening(job_id):
 
