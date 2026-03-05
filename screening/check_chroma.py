@@ -16,4 +16,4 @@ if os.path.exists(path):
         if col.count() > 0:
             print(f"  IDs: {col.get()['ids']}")
 else:
-    print("❌ chroma_db folder does NOT exist — Member 4 has never successfully stored a job")python check_chroma.py
+    print("❌ chroma_db folder does NOT exist — Member 4 has never successfully stored a job")
