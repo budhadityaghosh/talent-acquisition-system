@@ -322,29 +322,3 @@ Experience: {selected_job.get("experience_years")}
 
             st.error("Error submitting application")
             st.write(e)
-
-def run():
-    
-    import streamlit as st
-    from shared.db import get_supabase
-
-    supabase = get_supabase()
-
-    st.subheader("Apply for Job")
-
-    name = st.text_input("Name")
-    email = st.text_input("Email")
-    telegram_id = st.text_input("Telegram Chat ID")
-    resume = st.text_area("Paste Resume Text")
-
-    if st.button("Submit Application"):
-
-        supabase.table("candidates").insert({
-            "name": name,
-            "email": email,
-            "telegram_chat_id": telegram_id,
-            "resume_text": resume,
-            "status": "applied"
-        }).execute()
-
-        st.success("Application submitted successfully!")
