@@ -1,293 +1,300 @@
 import plotly.express as px
 import streamlit as st
+import pandas as pd
 from datetime import datetime, date
 import sys
 import os
 
-# allow imports from shared folder
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from shared.db import get_supabase
-from shared.chroma_setup import get_chroma
+from shared.chroma_setup import get_jobs_collection
 
 supabase = get_supabase()
-chroma_collection = get_chroma()
+chroma_collection = get_jobs_collection()
 
-st.set_page_config(page_title="HR Manager Dashboard", layout="wide")
+st.set_page_config(page_title="TalentAI HR Dashboard", layout="wide")
 
-st.title("🧑‍💼 HR Manager Dashboard")
-# ===============================
-# DASHBOARD ANALYTICS
-# ===============================
+# -------------------------
+# MODERN UI STYLE
+# -------------------------
 
-st.subheader("📊 Recruitment Overview")
+st.markdown("""
+<style>
 
-try:
-    jobs = supabase.table("jobs").select("*").execute().data
-    candidates = supabase.table("candidates").select("*").execute().data
-    slots = supabase.table("interview_slots").select("*").execute().data
+.main {
+    background: linear-gradient(180deg,#0E1117,#0B0F16);
+}
 
-    total_jobs = len(jobs)
-    total_candidates = len(candidates)
+.block-container{
+    padding-top:2rem;
+}
 
-    scheduled_interviews = len([s for s in slots if s.get("is_booked") == True])
-    open_slots = len([s for s in slots if s.get("is_booked") == False])
+.metric-card {
+    background:#11161c;
+    padding:18px;
+    border-radius:12px;
+    border:1px solid #1f2937;
+}
 
-    col1, col2, col3, col4 = st.columns(4)
+</style>
+""", unsafe_allow_html=True)
 
-    col1.metric("Total Jobs", total_jobs)
-    col2.metric("Candidates", total_candidates)
-    col3.metric("Scheduled Interviews", scheduled_interviews)
-    col4.metric("Open Slots", open_slots)
+st.title("🧠 TalentAI Recruitment Dashboard")
 
-except:
-    st.info("Analytics will appear once data is available.")
+# -------------------------
+# LOAD DATA
+# -------------------------
 
-    # ===============================
-# HIRING FUNNEL VISUALIZATION
-# ===============================
+jobs = supabase.table("jobs").select("*").execute().data or []
+candidates = supabase.table("candidates").select("*").execute().data or []
+slots = supabase.table("interview_slots").select("*").execute().data or []
 
-st.subheader("📈 Hiring Pipeline")
+jobs_df = pd.DataFrame(jobs)
+candidates_df = pd.DataFrame(candidates)
+slots_df = pd.DataFrame(slots)
 
-try:
+# -------------------------
+# GLOBAL METRICS
+# -------------------------
 
-    candidates = supabase.table("candidates").select("*").execute().data
-    slots = supabase.table("interview_slots").select("*").execute().data
+st.subheader("Platform Overview")
 
-    total_candidates = len(candidates)
+total_jobs = len(jobs_df)
+total_candidates = len(candidates_df)
 
-    screened = len([c for c in candidates if c.get("resume_text")])
-    shortlisted = len([c for c in candidates if c.get("source_quality_score",0) >= 7])
-    interviews = len([s for s in slots if s.get("is_booked") == True])
+scheduled_interviews = len(slots_df[slots_df["is_booked"] == True]) if not slots_df.empty else 0
+open_slots = len(slots_df[slots_df["is_booked"] == False]) if not slots_df.empty else 0
 
-    funnel_data = {
-        "Stage": [
-            "Candidates",
-            "Screened",
-            "Shortlisted",
-            "Interview"
-        ],
-        "Count": [
-            total_candidates,
-            screened,
-            shortlisted,
-            interviews
-        ]
-    }
+col1,col2,col3,col4 = st.columns(4)
 
-    fig = px.funnel(
-        funnel_data,
-        x="Count",
-        y="Stage"
+col1.metric("Open Positions", total_jobs)
+col2.metric("Total Candidates", total_candidates)
+col3.metric("Scheduled Interviews", scheduled_interviews)
+col4.metric("Available Slots", open_slots)
+
+# -------------------------
+# COMPANY ANALYTICS
+# -------------------------
+
+st.subheader("Company Wise Hiring")
+
+if not jobs_df.empty:
+
+    company_jobs = jobs_df.groupby("company_name").size().reset_index(name="jobs")
+
+    fig = px.bar(
+        company_jobs,
+        x="company_name",
+        y="jobs",
+        title="Jobs Posted per Company"
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
-except:
-    st.info("Pipeline analytics will appear once candidate data is available.")
+# -------------------------
+# JOB PIPELINE ANALYTICS
+# -------------------------
+
+st.subheader("Hiring Funnel")
+
+if not candidates_df.empty:
+
+    applied = len(candidates_df[candidates_df["status"] == "applied"])
+    shortlisted = len(candidates_df[candidates_df["status"] == "shortlisted"])
+    rejected = len(candidates_df[candidates_df["status"] == "rejected"])
+    maybe = len(candidates_df[candidates_df["status"] == "maybe"])
+
+    funnel_data = {
+        "Stage": ["Applied","Shortlisted","Maybe","Rejected"],
+        "Count": [applied,shortlisted,maybe,rejected]
+    }
+
+    fig = px.funnel(funnel_data, x="Count", y="Stage")
+
+    st.plotly_chart(fig,use_container_width=True)
+
+# -------------------------
+# CANDIDATE STATUS CHART
+# -------------------------
+
+st.subheader("Candidate Status Distribution")
+
+if not candidates_df.empty:
+
+    status_counts = candidates_df["status"].value_counts().reset_index()
+    status_counts.columns = ["Status","Count"]
+
+    fig = px.pie(status_counts, names="Status", values="Count")
+
+    st.plotly_chart(fig, use_container_width=True)
+
+# -------------------------
+# TOP CANDIDATES
+# -------------------------
+
+st.subheader("Top AI Ranked Candidates")
+
+if not candidates_df.empty:
+
+    top = candidates_df.sort_values(
+        by="screening_score",
+        ascending=False
+    ).head(10)
+
+    st.dataframe(
+        top[[
+            "name",
+            "job_applied",
+            "screening_score",
+            "skills_matched",
+            "recommendation"
+        ]]
+    )
+
+# -------------------------
+# JOB MANAGEMENT
+# -------------------------
 
 tabs = st.tabs([
-    "Post New Job",
-    "All Candidates",
-    "Scheduled Interviews",
-    "Add Interview Slots"
+"Post Job",
+"Candidate Database",
+"Interview Schedule",
+"Create Interview Slots"
 ])
 
-# ===============================
-# POST JOB TAB
-# ===============================
+# -------------------------
+# POST JOB
+# -------------------------
 
 with tabs[0]:
 
-    st.header("Post a New Job")
+    st.header("Post New Job")
 
     with st.form("job_form"):
 
-        col1, col2 = st.columns(2)
+        col1,col2 = st.columns(2)
 
         with col1:
-            company_name = st.text_input("Company Name *")
-            job_title = st.text_input("Job Title *")
-
-            experience_years = st.selectbox(
-                "Experience Required",
-                ["0-1 years", "1-3 years", "3-5 years", "5+ years"]
-            )
-
+            company_name = st.text_input("Company")
+            job_title = st.text_input("Role")
             location = st.text_input("Location")
             salary_range = st.text_input("Salary Range")
 
         with col2:
-            education = st.text_input("Education Requirement")
-            skills_required = st.text_area("Required Skills *")
-            dealbreakers = st.text_area("Dealbreakers")
-            requirements = st.text_area("Detailed Job Description *")
+            experience = st.selectbox(
+                "Experience",
+                ["0-1 years","1-3 years","3-5 years","5+ years"]
+            )
 
-        submit = st.form_submit_button("Post Job")
+            skills_required = st.text_area("Required Skills")
+            requirements = st.text_area("Job Description")
+
+        submit = st.form_submit_button("Create Job")
 
     if submit:
 
-        if company_name.strip() == "" or job_title.strip() == "" or requirements.strip() == "":
-            st.error("Please fill all required fields.")
-        else:
+        job_data = {
+            "company_name": company_name,
+            "job_title": job_title,
+            "skills_required": skills_required,
+            "requirements": requirements,
+            "experience_years": experience,
+            "location": location,
+            "salary_range": salary_range,
+            "created_at": datetime.now().isoformat()
+        }
 
-            job_data = {
-                "job_title": job_title,
-                "company_name": company_name,
-                "requirements": requirements,
-                "skills_required": skills_required,
-                "experience_years": experience_years,
-                "education": education,
-                "location": location,
-                "salary_range": salary_range,
-                "dealbreakers": dealbreakers,
-                "created_at": datetime.now().isoformat()
-            }
+        supabase.table("jobs").insert(job_data).execute()
 
-            try:
+        job_doc = f"""
+Company: {company_name}
+Job: {job_title}
+Skills: {skills_required}
+Requirements: {requirements}
+"""
 
-                supabase.table("jobs").insert(job_data).execute()
+        chroma_collection.add(
+            documents=[job_doc],
+            ids=[f"{company_name}_{job_title}_{datetime.now().timestamp()}"]
+        )
 
-                # store job context in vector DB
-                full_job_text = f"""
-                Company: {company_name}
-                Job Title: {job_title}
-                Requirements: {requirements}
-                Skills Required: {skills_required}
-                Experience: {experience_years}
-                """
+        st.success("Job created successfully!")
 
-                chroma_collection.add(
-                    documents=[full_job_text],
-                    ids=[f"{company_name}_{job_title}_{datetime.now().timestamp()}"]
-                )
-
-                st.success("Job posted successfully!")
-
-            except Exception as e:
-                st.error("Error posting job")
-                st.write(e)
-
-# ===============================
-# CANDIDATES TAB
-# ===============================
+# -------------------------
+# CANDIDATE DATABASE
+# -------------------------
 
 with tabs[1]:
 
-    st.header("All Candidates")
+    st.header("Candidate Database")
 
-    try:
+    if candidates_df.empty:
+        st.info("No candidates yet")
+    else:
 
-        result = supabase.table("candidates").select("*").execute()
+        search = st.text_input("Search candidate")
 
-        candidates = result.data
-
-        if not candidates:
-            st.info("No candidates available yet.")
+        if search:
+            filtered = candidates_df[
+                candidates_df["name"].str.contains(search, case=False)
+            ]
         else:
+            filtered = candidates_df
 
-            for c in candidates:
+        st.dataframe(filtered)
 
-                with st.container():
-
-                    col1, col2 = st.columns([2,1])
-
-                    with col1:
-                        st.subheader(c.get("name","Unknown"))
-                        st.write("📧", c.get("email",""))
-                        st.write("📞", c.get("phone",""))
-                        st.write("Job Applied:", c.get("job_applied",""))
-
-                    with col2:
-                        st.metric("Source Score", c.get("source_quality_score",0))
-
-                    st.divider()
-
-    except Exception as e:
-        st.error("Error loading candidates")
-        st.write(e)
-
-# ===============================
-# INTERVIEW SCHEDULE TAB
-# ===============================
+# -------------------------
+# INTERVIEW SCHEDULE
+# -------------------------
 
 with tabs[2]:
 
     st.header("Scheduled Interviews")
 
-    try:
+    booked = slots_df[slots_df["is_booked"] == True] if not slots_df.empty else []
 
-        result = supabase.table("interview_slots").select("*").execute()
+    if len(booked) == 0:
+        st.info("No interviews scheduled")
+    else:
 
-        slots = result.data
+        st.dataframe(booked)
 
-        booked_slots = [s for s in slots if s.get("is_booked") == True]
-
-        if not booked_slots:
-            st.info("No interviews scheduled yet.")
-        else:
-
-            for s in booked_slots:
-
-                st.write("Candidate:", s.get("candidate_name",""))
-                st.write("Interviewer:", s.get("interviewer_name",""))
-                st.write("Date:", s.get("date",""))
-                st.write("Time:", s.get("time",""))
-
-                st.divider()
-
-    except Exception as e:
-        st.error("Error loading interviews")
-        st.write(e)
-
-# ===============================
-# ADD INTERVIEW SLOT TAB
-# ===============================
+# -------------------------
+# CREATE SLOTS
+# -------------------------
 
 with tabs[3]:
 
-    st.header("Add Interview Slots")
+    st.header("Create Interview Slots")
 
-    with st.form("slot_form"):
+    with st.form("slots"):
 
-        interviewer_name = st.text_input("Interviewer Name")
+        interviewer = st.text_input("Interviewer")
 
-        interview_date = st.date_input("Interview Date", min_value=date.today())
+        interview_date = st.date_input("Date", min_value=date.today())
 
         times = st.multiselect(
-            "Select Time Slots",
-            [
-                "10:00 AM",
-                "11:00 AM",
-                "12:00 PM",
-                "2:00 PM",
-                "3:00 PM",
-                "4:00 PM"
-            ]
+            "Time slots",
+            ["10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM"]
         )
 
-        submit_slots = st.form_submit_button("Add Slots")
+        submit = st.form_submit_button("Create Slots")
 
-    if submit_slots:
+    if submit:
 
-        try:
+        for t in times:
 
-            for time in times:
+            slot = {
+                "date": str(interview_date),
+                "time": t,
+                "interviewer_name": interviewer,
+                "is_booked": False,
+                "candidate_id": None,
+                "candidate_name": None,
+                "created_at": datetime.now().isoformat()
+            }
 
-                slot_data = {
-                    "date": str(interview_date),
-                    "time": time,
-                    "is_booked": False,
-                    "candidate_id": None,
-                    "candidate_name": None,
-                    "interviewer_name": interviewer_name,
-                    "created_at": datetime.now().isoformat()
-                }
+            supabase.table("interview_slots").insert(slot).execute()
 
-                supabase.table("interview_slots").insert(slot_data).execute()
-
-            st.success("Interview slots added!")
-
-        except Exception as e:
-            st.error("Error adding slots")
-            st.write(e)
+        st.success("Slots created successfully")

@@ -1,8 +1,8 @@
 import sys
 import os
 import json
-import google.generativeai as genai  # ← correct SDK (matches project plan & Member 1)
 from dotenv import load_dotenv
+from groq import Groq
 
 # allow importing shared modules
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -12,13 +12,21 @@ from shared.chroma_setup import get_job_context, get_candidates_collection
 
 load_dotenv()
 
-# configure Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-1.5-flash")
+# -----------------------------
+# GROQ CONFIG
+# -----------------------------
+
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
+)
 
 # Supabase connection
 supabase = get_supabase()
 
+
+# -----------------------------
+# SCREEN ONE CANDIDATE
+# -----------------------------
 
 def screen_one_candidate(resume_text, job_context):
 
@@ -45,23 +53,33 @@ Return ONLY valid JSON — no markdown, no explanation:
 }}
 """
 
-    raw = model.generate_content(prompt).text.strip()
-
-    # clean Gemini markdown formatting if present
-    if "```" in raw:
-        raw = raw.split("```")[1]
-
-    if raw.startswith("json"):
-        raw = raw[4:]
-
-    raw = raw.strip()
-
     try:
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.2
+        )
+
+        raw = response.choices[0].message.content.strip()
+
+        # clean markdown formatting if present
+        if "```" in raw:
+            raw = raw.split("```")[1]
+
+        if raw.startswith("json"):
+            raw = raw[4:]
+
+        raw = raw.strip()
+
         return json.loads(raw)
 
-    except json.JSONDecodeError:
+    except Exception as e:
 
-        print("⚠ Gemini returned invalid JSON. Using fallback result.")
+        print("⚠ Groq returned invalid JSON. Using fallback result.")
+        print(e)
 
         return {
             "screening_score": 50,
@@ -74,28 +92,31 @@ Return ONLY valid JSON — no markdown, no explanation:
         }
 
 
+# -----------------------------
+# RUN SCREENING
+# -----------------------------
+
 def run_screening(job_id):
 
     job_context = get_job_context(job_id)
 
     if not job_context:
         print(f"❌ Job {job_id} not found in ChromaDB.")
-        print("   → Make sure Member 4 has posted this job via hr_portal.py first.")
-        print("   → The chroma_db/ folder must exist in the project root.")
+        print("→ Make sure HR posted this job first.")
         return "Failed"
 
     result = (
         supabase.table("candidates")
         .select("*")
         .eq("job_id", job_id)
-        .in_("status", ["applied", "sourced_qualified"])
+        .in_("status", ["applied", "sourced_qualified", "sourced_filtered"])
         .execute()
     )
 
     candidates = result.data
 
     if not candidates:
-        print(f"No candidates with status 'applied' or 'sourced_qualified' for job {job_id}.")
+        print(f"No candidates found for job {job_id}.")
         return "No candidates"
 
     print(f"\nScreening {len(candidates)} candidates for job {job_id}")
@@ -121,7 +142,10 @@ def run_screening(job_id):
 
             new_status = status_map.get(score["recommendation"], "maybe")
 
-            # Optional: send Telegram shortlist notification
+            # -----------------------------
+            # Telegram notification
+            # -----------------------------
+
             if new_status == "shortlisted":
                 try:
                     from engagement.telegram_notifier import send_shortlist_notification
@@ -135,7 +159,10 @@ def run_screening(job_id):
                 except Exception as e:
                     print("Telegram shortlist notification failed:", e)
 
-            # update Supabase
+            # -----------------------------
+            # Update Supabase
+            # -----------------------------
+
             supabase.table("candidates").update({
 
                 "screening_score": score["screening_score"],
@@ -147,7 +174,10 @@ def run_screening(job_id):
 
             }).eq("id", c["id"]).execute()
 
-            # store screened candidate in ChromaDB
+            # -----------------------------
+            # Store in ChromaDB
+            # -----------------------------
+
             coll = get_candidates_collection()
 
             coll.upsert(
@@ -178,6 +208,10 @@ def run_screening(job_id):
 
     return summary
 
+
+# -----------------------------
+# MAIN
+# -----------------------------
 
 if __name__ == "__main__":
 
