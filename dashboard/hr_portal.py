@@ -1,9 +1,14 @@
+
+
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from crew.orchestrator import run_pipeline, get_candidate_rankings
 import plotly.express as px
 import streamlit as st
 import pandas as pd
 from datetime import datetime, date
-import sys
-import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -13,6 +18,12 @@ from shared.chroma_setup import get_jobs_collection
 supabase = get_supabase()
 chroma_collection = get_jobs_collection()
 
+st.set_page_config(
+    page_title="TalentAI HR Dashboard",
+    layout="wide"
+)
+
+st.title("🤖 TalentAI Recruitment System")
 st.set_page_config(page_title="TalentAI HR Dashboard", layout="wide")
 
 # -------------------------
@@ -298,3 +309,37 @@ with tabs[3]:
             supabase.table("interview_slots").insert(slot).execute()
 
         st.success("Slots created successfully")
+        st.divider()
+
+st.subheader("⚙️ Recruitment Pipeline")
+
+if st.button("Run Recruitment Pipeline"):
+
+    with st.spinner("Running recruitment pipeline..."):
+
+        logs = run_pipeline()
+
+    st.success("Pipeline executed successfully!")
+
+    st.subheader("Pipeline Logs")
+
+    for log in logs:
+        st.write(log)
+
+
+# ---- Candidate Rankings (OUTSIDE the button) ----
+
+st.subheader("🏆 Candidate Rankings")
+
+ranked_candidates = get_candidate_rankings()
+
+if ranked_candidates:
+
+    for i, c in enumerate(ranked_candidates):
+
+        st.write(
+            f"{i+1}. {c['name']} | Score: {c['source_quality_score']} | Status: {c.get('status','pending')}"
+        )
+
+else:
+    st.info("No candidates available")
