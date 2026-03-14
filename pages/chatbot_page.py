@@ -10,7 +10,7 @@ from groq import Groq
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from shared.db import get_supabase
+from shared.db import get_supabase, get_secret
 from shared.chroma_setup import get_jobs_collection
 from shared.ui_theme import apply_theme
 
@@ -21,10 +21,10 @@ load_dotenv()
 # INITIALIZATION
 # -------------------------------------------------
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_API_KEY = get_secret("GROQ_API_KEY")
 
 if not GROQ_API_KEY:
-    st.error("Missing GROQ_API_KEY in .env")
+    st.error("Missing GROQ_API_KEY. Add it to .env (local) or Streamlit Secrets (cloud).")
     st.stop()
 
 client = Groq(api_key=GROQ_API_KEY)
