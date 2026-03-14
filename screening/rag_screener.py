@@ -49,6 +49,7 @@ Return ONLY valid JSON — no markdown, no explanation:
 "experience_fit": "<good|average|poor>",
 "culture_fit": "<good|average|poor>",
 "recommendation": "<shortlist|reject|maybe>",
+"screening_reason": "<2-3 sentence explanation of why this score was given>",
 "summary": "<two sentences>"
 }}
 """
@@ -88,6 +89,7 @@ Return ONLY valid JSON — no markdown, no explanation:
             "experience_fit": "average",
             "culture_fit": "average",
             "recommendation": "maybe",
+            "screening_reason": "Fallback result due to parsing error.",
             "summary": "Fallback result due to parsing error."
         }
 
@@ -134,13 +136,15 @@ def run_screening(job_id):
 
             score = screen_one_candidate(c["resume_text"], job_context)
 
-            status_map = {
-                "shortlist": "shortlisted",
-                "reject": "rejected",
-                "maybe": "maybe"
-            }
+            # Score-based status logic
+            screening_score = score["screening_score"]
 
-            new_status = status_map.get(score["recommendation"], "maybe")
+            if screening_score >= 70:
+                new_status = "shortlisted"
+            elif screening_score >= 50:
+                new_status = "maybe"
+            else:
+                new_status = "rejected"
 
             # -----------------------------
             # Telegram notification
@@ -165,11 +169,12 @@ def run_screening(job_id):
 
             supabase.table("candidates").update({
 
-                "screening_score": score["screening_score"],
+                "screening_score": screening_score,
                 "skills_matched": ", ".join(score.get("skills_matched", [])),
                 "skills_missing": ", ".join(score.get("skills_missing", [])),
                 "culture_fit": score.get("culture_fit", ""),
                 "recommendation": score.get("recommendation", ""),
+                "screening_reason": score.get("screening_reason", score.get("summary", "")),
                 "status": new_status
 
             }).eq("id", c["id"]).execute()

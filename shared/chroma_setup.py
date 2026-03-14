@@ -35,3 +35,43 @@ def get_job_context(job_id):
     except Exception:
         pass
     return ""
+
+
+def check_duplicate_resume(resume_text, threshold=0.95):
+    """
+    Check if a similar resume already exists in ChromaDB.
+    Returns True if duplicate found (similarity > threshold).
+    """
+    collection = get_candidates_collection()
+
+    if collection.count() == 0:
+        return False
+
+    try:
+        results = collection.query(
+            query_texts=[resume_text[:1000]],
+            n_results=1
+        )
+
+        if results and results.get("distances"):
+            # ChromaDB default uses L2 distance; lower = more similar
+            # For cosine distance: similarity = 1 - distance
+            distance = results["distances"][0][0]
+            similarity = 1 - distance
+
+            if similarity > threshold:
+                return True
+
+    except Exception:
+        pass
+
+    return False
+
+
+def store_candidate_resume(candidate_id, resume_text):
+    """Store a candidate resume in ChromaDB for duplicate detection."""
+    collection = get_candidates_collection()
+    collection.upsert(
+        documents=[resume_text[:1000]],
+        ids=[str(candidate_id)]
+    )
