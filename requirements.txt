@@ -6,13 +6,8 @@ python-dotenv
 chromadb
 sentence-transformers
 openai
-streamlit
-supabase
-PyPDF2
-requests
-python-dotenv
 google-genai
 crewai
 crewai-tools
-chromadb
 litellm
+groq
