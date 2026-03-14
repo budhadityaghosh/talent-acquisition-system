@@ -7,7 +7,7 @@ from groq import Groq
 # allow importing shared modules
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from shared.db import get_supabase
+from shared.db import get_supabase, get_secret
 from shared.chroma_setup import get_job_context, get_candidates_collection
 
 load_dotenv()
@@ -17,7 +17,7 @@ load_dotenv()
 # -----------------------------
 
 client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
+    api_key=get_secret("GROQ_API_KEY")
 )
 
 # Supabase connection

@@ -1,10 +1,14 @@
 import requests
 import os
+import sys
 from dotenv import load_dotenv
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from shared.db import get_secret
 
 load_dotenv()
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN = get_secret("TELEGRAM_BOT_TOKEN")
 
 
 def send_interview_confirmation(
