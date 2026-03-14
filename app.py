@@ -148,6 +148,7 @@ def show_hr_login():
 
         if st.button("← Back to Home", use_container_width=True):
             st.session_state.portal = None
+            st.query_params.clear()
             st.rerun()
 
 
@@ -175,6 +176,7 @@ if portal == "hr" and st.session_state.authenticated:
         if st.button("🚪 Logout", use_container_width=True):
             st.session_state.authenticated = False
             st.session_state.portal = None
+            st.query_params.clear()
             st.rerun()
 
     nav.run()
@@ -196,6 +198,7 @@ elif portal == "candidate":
         st.divider()
         if st.button("← Back to Home", use_container_width=True):
             st.session_state.portal = None
+            st.query_params.clear()
             st.rerun()
 
     nav.run()

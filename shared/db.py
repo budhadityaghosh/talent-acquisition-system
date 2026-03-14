@@ -10,6 +10,7 @@ load_dotenv()
 def get_secret(key):
     """
     Get a secret from os.getenv first (local .env), then st.secrets (Streamlit Cloud).
+    Supports both flat secrets and secrets under [env] section.
     """
     value = os.getenv(key)
     if value:
@@ -17,6 +18,10 @@ def get_secret(key):
     try:
         return st.secrets[key]
     except (KeyError, FileNotFoundError):
+        pass
+    try:
+        return st.secrets["env"][key]
+    except (KeyError, FileNotFoundError, AttributeError):
         return None
 
 
