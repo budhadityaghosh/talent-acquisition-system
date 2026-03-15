@@ -111,7 +111,7 @@ def run_screening(job_id):
         supabase.table("candidates")
         .select("*")
         .eq("job_id", job_id)
-        .in_("status", ["applied", "sourced_qualified", "sourced_filtered"])
+        .eq("status", "applied")
         .execute()
     )
 
