@@ -15,7 +15,13 @@ html, body, [class*="css"] {
     color: #e8e8f0;
 }
 
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
+
+/* Keep the sidebar toggle visible but hide the decorative header bar */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    border-bottom: none !important;
+}
 
 .main .block-container {
     padding: 2rem 2rem;
@@ -132,6 +138,12 @@ h1, h2, h3 {
 [data-testid="stSidebar"] {
     background: #0d0d15 !important;
     border-right: 1px solid #1a1a2e !important;
+    min-width: 280px !important;
+}
+
+/* Sidebar collapse/expand button */
+[data-testid="stSidebarCollapsedControl"] {
+    color: #e8e8f0 !important;
 }
 
 [data-testid="stSidebar"] [data-testid="stMarkdown"] {
