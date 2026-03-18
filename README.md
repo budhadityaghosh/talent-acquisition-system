@@ -16,18 +16,20 @@ An end-to-end **AI-powered recruitment automation platform** that streamlines ca
 
 ## 📄 Documentation
 
-* 📎 **Project Report:** [View Full Report](./docs/TalentAI_Report.pdf)
+* 📎 **Project Report:** [View Full Report](./TalentAI_Academic_Report.docx)
 
 ---
 
 # 🧠 Project Overview
 
-TalentAI automates the **entire recruitment lifecycle**, reducing manual effort and eliminating bias through an AI-driven pipeline.
+TalentAI automates the **entire recruitment lifecycle**, reducing manual effort and eliminating bias using an intelligent AI pipeline.
 
-✔ Automated resume screening
-✔ Context-aware evaluation using RAG
-✔ Multi-agent decision making
-✔ Real-time candidate communication
+### ✨ What makes it powerful?
+
+* Multi-agent AI system (CrewAI)
+* Context-aware screening using RAG
+* Bias-free evaluation pipeline
+* Fully automated hiring workflow
 
 ---
 
@@ -35,24 +37,44 @@ TalentAI automates the **entire recruitment lifecycle**, reducing manual effort 
 
 ## 👨‍💼 HR Portal
 
-* Job posting & pipeline trigger
-* Candidate dashboard & analytics
-* Screening result visualization
-* Interview scheduling
+* Post and manage job listings
+* Trigger AI screening pipeline
+* View real-time dashboard
+* Analyze candidate performance
+* Schedule interviews
 
 ## 👩‍💻 Candidate Portal
 
-* Resume upload (PDF parsing)
-* AI HR chatbot
-* Interview slot booking
-* Telegram notifications
+* Apply for jobs with resume upload
+* AI-powered HR chatbot
+* Track application progress
+* Book interview slots
+* Receive Telegram notifications
 
-## 🤖 AI Pipeline
+## 🤖 AI Pipeline (Core System)
 
-* Multi-agent architecture using CrewAI
-* RAG-based resume screening
-* Structured JSON outputs
-* Bias filtering system
+### 🔹 Agent 1 — Sourcing Specialist
+
+* Evaluates candidate profiles
+* Assigns quality score (0–100)
+* Filters unqualified candidates
+
+### 🔹 Agent 2 — Screening Expert (RAG)
+
+* Retrieves job-specific context from ChromaDB
+* Evaluates resumes against requirements
+* Outputs structured JSON:
+
+  * screening_score
+  * skills_matched
+  * skills_missing
+  * recommendation
+
+### 🔹 Agent 3 — Engagement Coordinator
+
+* Generates HR reports
+* Identifies top candidates
+* Suggests hiring actions
 
 ---
 
@@ -79,7 +101,7 @@ TalentAI automates the **entire recruitment lifecycle**, reducing manual effort 
              | Agent 2: RAG Screening        |
              | Agent 3: Engagement           |
              | Bias Filter Module            |
-             | Groq LLM                      |
+             | Groq LLM (Inference Engine)   |
              +---------------+---------------+
                              |
                              v
@@ -97,8 +119,8 @@ TalentAI automates the **entire recruitment lifecycle**, reducing manual effort 
 
 ### 1. Presentation Layer
 
-* HR Portal (Streamlit dashboard)
-* Candidate Portal (application interface)
+* **HR Portal (Streamlit):** Recruiter dashboard
+* **Candidate Portal:** Job application interface
 
 ---
 
@@ -110,7 +132,7 @@ TalentAI automates the **entire recruitment lifecycle**, reducing manual effort 
 
 ---
 
-### 3. Bias Filter
+### 3. Bias Filtering Layer
 
 Removes:
 
@@ -119,57 +141,75 @@ Removes:
 * Location
 * University
 
-Ensures **fair and unbiased evaluation**
+✔ Ensures fair and unbiased hiring
 
 ---
 
 ### 4. Data Layer
 
-#### Supabase
+#### 🗄️ Supabase (PostgreSQL)
 
 * jobs
 * candidates
 * interview_slots
 * chat_logs
 
-#### ChromaDB
+#### 🧠 ChromaDB
 
-* Job embeddings
-* Resume embeddings
+* Job embeddings (for RAG)
+* Candidate embeddings
 
 ---
 
 ### 5. Communication Layer
 
-* Telegram Bot API
-* Real-time notifications
+* Telegram Bot integration
+* Real-time alerts and notifications
 
 ---
 
-# 🧠 Generative AI Highlights
+# 🧠 Generative AI Implementation
 
-* Retrieval-Augmented Generation (RAG)
-* Multi-agent orchestration (CrewAI)
-* Structured JSON outputs
-* Bias filtering pipeline
+## 🔍 Retrieval-Augmented Generation (RAG)
+
+* Job descriptions embedded into vector DB
+* Retrieved dynamically during screening
+* Ensures accurate and context-aware scoring
+
+---
+
+## 🤖 Multi-Agent Orchestration
+
+* Built using CrewAI
+* Sequential agent execution
+* Database-driven workflow
+
+---
+
+## 📦 Structured JSON Output
+
+* Machine-readable LLM responses
+* Reliable pipeline integration
+* Fallback handling for errors
 
 ---
 
 # ⚙️ Tech Stack
 
-| Layer         | Technology     |
-| ------------- | -------------- |
-| Frontend      | Streamlit      |
-| LLM           | Groq (LLaMA 3) |
-| Agents        | CrewAI         |
-| Database      | Supabase       |
-| Vector DB     | ChromaDB       |
-| Notifications | Telegram Bot   |
-| Parsing       | PyPDF2         |
+| Layer         | Technology       |
+| ------------- | ---------------- |
+| Frontend      | Streamlit        |
+| LLM API       | Groq (LLaMA 3)   |
+| Agents        | CrewAI + LiteLLM |
+| Backend DB    | Supabase         |
+| Vector DB     | ChromaDB         |
+| Notifications | Telegram Bot API |
+| Parsing       | PyPDF2           |
+| Analytics     | Plotly + Pandas  |
 
 ---
 
-# 🚀 Run Locally
+# 🚀 How to Run Locally
 
 ```bash
 git clone https://github.com/budhadityaghosh/talent-acquisition-system
@@ -182,20 +222,20 @@ streamlit run app.py
 
 # 📊 Results
 
-* Fully automated hiring pipeline
+* Fully automated recruitment workflow
 * Real-time dashboard updates
-* Context-aware screening (RAG)
-* Bias-free evaluation
-* Zero infrastructure cost
+* Improved screening accuracy with RAG
+* Bias-free evaluation system
+* Zero-cost deployment (free-tier tools)
 
 ---
 
 # 🔮 Future Scope
 
-* LinkedIn integration
-* Advanced embeddings
-* Multi-round interview system
-* Feedback-based model tuning
+* LinkedIn integration for real candidate sourcing
+* Advanced embedding models
+* Multi-stage interview workflows
+* Feedback-based model improvement
 
 ---
 
