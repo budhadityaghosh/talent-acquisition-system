@@ -11,6 +11,27 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from shared.ui_theme import apply_theme
+import subprocess
+
+# -------------------------------------------------
+# BACKGROUND BOT RUNNER
+# -------------------------------------------------
+
+@st.cache_resource
+def start_telegram_bot():
+    """Starts the Telegram bot in a background process."""
+    try:
+        bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "engagement", "telegram_bot.py")
+        # Run the bot in background, sys.executable ensures same python env
+        process = subprocess.Popen([sys.executable, bot_path])
+        return process
+    except Exception as e:
+        print(f"Failed to start telegram bot: {e}")
+        return None
+
+# Start bot on app load
+start_telegram_bot()
+
 
 
 # -------------------------------------------------
