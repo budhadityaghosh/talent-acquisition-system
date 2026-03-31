@@ -11,6 +11,27 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from shared.ui_theme import apply_theme
+import subprocess
+
+# -------------------------------------------------
+# BACKGROUND BOT RUNNER
+# -------------------------------------------------
+
+@st.cache_resource
+def start_telegram_bot():
+    """Starts the Telegram bot in a background process."""
+    try:
+        bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "engagement", "telegram_bot.py")
+        # Run the bot in background, sys.executable ensures same python env
+        process = subprocess.Popen([sys.executable, bot_path])
+        return process
+    except Exception as e:
+        print(f"Failed to start telegram bot: {e}")
+        return None
+
+# Start bot on app load
+start_telegram_bot()
+
 
 
 # -------------------------------------------------
@@ -20,7 +41,8 @@ from shared.ui_theme import apply_theme
 st.set_page_config(
     page_title="TalentAI Recruitment System",
     page_icon="🧠",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 apply_theme()
@@ -148,6 +170,7 @@ def show_hr_login():
 
         if st.button("← Back to Home", use_container_width=True):
             st.session_state.portal = None
+            st.query_params.clear()
             st.rerun()
 
 
@@ -175,6 +198,7 @@ if portal == "hr" and st.session_state.authenticated:
         if st.button("🚪 Logout", use_container_width=True):
             st.session_state.authenticated = False
             st.session_state.portal = None
+            st.query_params.clear()
             st.rerun()
 
     nav.run()
@@ -196,6 +220,7 @@ elif portal == "candidate":
         st.divider()
         if st.button("← Back to Home", use_container_width=True):
             st.session_state.portal = None
+            st.query_params.clear()
             st.rerun()
 
     nav.run()
